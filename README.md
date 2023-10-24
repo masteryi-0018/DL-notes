@@ -76,6 +76,24 @@ print(response)
 
 <https://github.com/alibaba/MNN>
 
+> 注意：Ubuntu 18.04.2 LTS下编译不通过，需要Ubuntu 20.04.3 LTS
+
+大致的步骤分为：
+- 使用MNNConverter将模型转换为mnn格式，支持的模型：TF, CAFFE, ONNX, TFLITE, TORCH, MNN, JSON
+- 使用quantized.out进行量化
+- 构建程序编译
+
+关于量化：
+- 离线量化：EMA，KL，ADMM
+- 训练量化：LSQ，OAQ，WAQ
+- **直接权值量化**：包括对称量化，非对称量化；一般8bit，计算时还原为float，这个应该和pdlite的动态离线量化一个道理
+- 训练权值量化：包括对称量化；更低比特
+- FP16
+
+优势：
+- 模型转换支持框架多、算子多
+- 模型处理输入输出直观方便
+
 ### NCNN
 
 <https://github.com/Tencent/ncnn>
