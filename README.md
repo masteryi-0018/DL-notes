@@ -103,3 +103,27 @@ print(response)
 <https://github.com/DefTruth/lite.ai.toolkit>
 
 好多框架与网络的集合
+
+## 关于conda和pip
+
+### conda
+
+```
+vim ~/.condarc
+
+channels:
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/msys2/
+  - defaults
+show_channel_urls: true
+```
+
+### pip
+
+```
+echo "[global]" > ~/pip.conf
+echo "index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >> ~/pip.conf
+mkdir .pip
+mv ~/pip.conf ~/.pip/pip.conf
+```

@@ -1,3 +1,6 @@
 # model文件
 *.bin
 *.model
+
+# py
+__pycache__
