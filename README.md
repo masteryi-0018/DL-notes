@@ -5,6 +5,7 @@
 目前开源的常用的模型：
 - chatglm
 - baichuan
+- llama
 
 更全面的开源llm整理：<https://zhuanlan.zhihu.com/p/654956859>
 
@@ -39,6 +40,31 @@ print(response)
 - pytorch_model.bin（已有）
 
 于是从清华云下载权重后，再将此仓库的其他文件一并放入文件夹，最后将上述脚本的文件修改为本地文件夹路径例如`"./chatglm2-6b-int4"`，，即可加载运行
+
+### chatglm
+
+官方的模型需要申请license才能下载，好在有其他方法可以尝试，以下链接：
+
+1. hugging face非官方
+- <https://huggingface.co/NousResearch/Llama-2-13b-hf>
+- <https://huggingface.co/NousResearch/Llama-2-7b-hf>
+- <https://huggingface.co/NousResearch/Llama-2-7b-chat-hf>
+
+2. gitee镜像仓库
+- <https://gitee.com/modelee/LLaMA-2-7B-32K>
+- <https://gitee.com/modelee/llama-7b-hf>
+- <https://gitee.com/modelee/llama-7b>
+
+3. 异型岛
+- <https://aliendao.cn/models/NousResearch/Llama-2-7b-hf>
+
+
+我的尝试
+
+```
+git clone https://huggingface.co/NousResearch/Llama-2-7b-chat-hf
+git restore --source=HEAD :/
+```
 
 ## HF模型转换为onnx模型
 
