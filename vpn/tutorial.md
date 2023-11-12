@@ -26,6 +26,9 @@
 3. OPENVPN
     - 客户端不好用
 
+4. <https://github.com/yichengchen/clashX>，一个系列，GitHub直接搜就好
+    - 最近Windows版的GUI被封了...
+
 ## 教程
 
 1. <https://github.com/233boy/v2ray>，一键安装脚本
@@ -36,7 +39,11 @@
 我们一般将提供 v2ray / v2fly 代理或 shadowsocks 服务的商家，俗称机场，或者飞机场
 
 1. 搬瓦工 JMS 机场，Just My Socks，<https://justmysocks5.net/members/cart.php?gid=1&language=chinese>
+2. clashX使用的，<https://2.akkcloud1.com/auth/login>
 
+## 虚拟信用卡
+
+- <https://bewildcard.com/>，就是感觉有点贵
 
 ## 关于ChatGPT
 
