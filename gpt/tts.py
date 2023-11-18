@@ -7,12 +7,12 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 # List available 🐸TTS models
 print(TTS().list_models())
 
-# Init TTS
-tts = TTS("tts_models/multilingual/multi-dataset/xtts_v1").to(device)
+# 中文
+# tts = TTS(model_name="tts_models/zh-CN/baker/tacotron2-DDC-GST").to(device)
+# OUTPUT_PATH = "speech.wav"
+# tts.tts_to_file(text="你好，世界。", file_path=OUTPUT_PATH)
 
-# Run TTS
-# ❗ Since this model is multi-lingual voice cloning model, we must set the target speaker_wav and language
-# Text to speech list of amplitude values as output
-wav = tts.tts(text="Hello world!", speaker_wav="my/cloning/audio.wav", language="en")
-# Text to speech to a file
-tts.tts_to_file(text="Hello world!", speaker_wav="my/cloning/audio.wav", language="en", file_path="output.wav")
+# 英文
+tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC").to(device)
+OUTPUT_PATH = "speech.wav"
+tts.tts_to_file(text="hello world.", file_path=OUTPUT_PATH)
