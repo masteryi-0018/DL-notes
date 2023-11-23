@@ -1,6 +1,11 @@
 # model文件
 *.bin
 *.model
+*.tflite
+*.pth
 
 # py
 __pycache__
+
+# model目录
+tf_model/
