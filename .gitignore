@@ -9,3 +9,8 @@ __pycache__
 
 # model目录
 tf_model/
+
+# 音频文件
+*.wav
+*.mp3
+*.m4a
