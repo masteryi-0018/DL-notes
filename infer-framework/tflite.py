@@ -45,3 +45,61 @@ tflite_model = converter.convert()
 # Save the model.
 with open('model.tflite', 'wb') as f:
     f.write(tflite_model)
+
+
+'''2. 量化'''
+
+# 单conv算子实验
+import tensorflow as tf
+import keras
+from keras import layers
+model = keras.Sequential()
+model.add(keras.Input(shape=(224, 224, 3)))
+model.add(layers.Conv2D(filters=64, kernel_size=3, padding='same', activation=None))
+
+model.summary()
+model.save('tf_model')
+
+
+# 1. 动态
+converter = tf.lite.TFLiteConverter.from_saved_model("tf_model") # path to the SavedModel directory
+converter.optimizations = [tf.lite.Optimize.DEFAULT]  # 默认量化，weight int8，bias float32
+tflite_model = converter.convert()
+# Save the model.
+with open('SavedModel_dyn.tflite', 'wb') as f:
+    f.write(tflite_model)
+
+
+# 2. int8
+converter = tf.lite.TFLiteConverter.from_saved_model("tf_model")
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+import numpy as np
+def representative_data_gen():
+    for _ in range(100):
+        data = np.random.rand(1, 224, 224, 3)
+        yield [data.astype(np.float32)]
+converter.representative_dataset = representative_data_gen
+tflite_model = converter.convert()
+with open('SavedModel_int8.tflite', 'wb') as f:
+    f.write(tflite_model)
+
+
+# 3. 处理输入输出
+converter = tf.lite.TFLiteConverter.from_saved_model("tf_model")
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+import numpy as np
+def representative_data_gen():
+    for _ in range(100):
+        data = np.random.rand(1, 224, 224, 3)
+        yield [data.astype(np.float32)]
+converter.representative_dataset = representative_data_gen
+
+# Ensure that if any ops can't be quantized, the converter throws an error
+converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
+# Set the input and output tensors to uint8 (APIs added in r2.3)
+converter.inference_input_type = tf.uint8
+converter.inference_output_type = tf.uint8
+
+tflite_model = converter.convert()
+with open('SavedModel_int8_inout.tflite', 'wb') as f:
+    f.write(tflite_model)
