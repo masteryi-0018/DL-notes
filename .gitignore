@@ -3,6 +3,7 @@
 *.model
 *.tflite
 *.pth
+*.pt
 
 # py
 __pycache__
