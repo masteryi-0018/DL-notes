@@ -2,6 +2,8 @@
 *.bin
 *.model
 *.tflite
+*.keras
+*.h5
 *.pth
 *.pt
 

@@ -49,7 +49,7 @@ with open('model.tflite', 'wb') as f:
 
 '''2. 量化'''
 
-# 单conv算子实验
+# 1. 单conv算子实验
 import tensorflow as tf
 import keras
 from keras import layers
@@ -58,10 +58,27 @@ model.add(keras.Input(shape=(224, 224, 3)))
 model.add(layers.Conv2D(filters=64, kernel_size=3, padding='same', activation=None))
 
 model.summary()
-model.save('tf_model')
+# model.save('tf_model') # 新版本tf不可用
+model.save('conv.keras')
+model.save('conv.h5')
+tf.saved_model.save(model, 'conv')
+
+# 2. 单add算子实验
+import tensorflow as tf
+input1 = tf.keras.layers.Input(shape=(4,))
+input2 = tf.keras.layers.Input(shape=(4,))
+# equivalent to `added = tf.keras.layers.add([x1, x2])`
+added = tf.keras.layers.Add()([input1, input2])
+model = tf.keras.models.Model(inputs=[input1, input2], outputs=added)
+
+model.summary()
+model.save('add.keras')
+model.save('add.h5')
+tf.saved_model.save(model, 'add')
 
 
 # 1. 动态
+# from_saved_model在conv2d时出错
 converter = tf.lite.TFLiteConverter.from_saved_model("tf_model") # path to the SavedModel directory
 converter.optimizations = [tf.lite.Optimize.DEFAULT]  # 默认量化，weight int8，bias float32
 tflite_model = converter.convert()
