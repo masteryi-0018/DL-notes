@@ -57,3 +57,27 @@ VPS 速度：香港线路 > 日本线路 > CN2 GIA 线路 > CN2 线路 > 普通�
 ## 关于GitHub
 
 - [镜像、host](https://github.com/Alvin9999/new-pac/wiki/%E4%B8%8D%E7%BF%BB%E5%A2%99%E4%B8%8Agithub)
+
+## 关于conda和pip
+
+### conda
+
+```
+vim ~/.condarc
+
+channels:
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/msys2/
+  - defaults
+show_channel_urls: true
+```
+
+### pip
+
+```
+echo "[global]" > ~/pip.conf
+echo "index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >> ~/pip.conf
+mkdir .pip
+mv ~/pip.conf ~/.pip/pip.conf
+```

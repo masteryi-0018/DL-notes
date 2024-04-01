@@ -1,155 +1,65 @@
-# llm-notes
+# DL-notes
 
-## 模型获取
+## 人工智能
 
-目前开源的常用的模型：
-- chatglm
-- baichuan
-- llama
+人工智能三驾马车：
 
-更全面的开源llm整理：<https://zhuanlan.zhihu.com/p/654956859>
+1. 算法：机器学习（本文探讨点）
+2. 算力：芯片
+3. 大数据
 
-### chatglm
+## 机器学习
 
-网络情况“良好”的状态下，直接利用hugging face官方下载，示例脚本：
-```py
-from transformers import AutoTokenizer, AutoModel
-tokenizer = AutoTokenizer.from_pretrained("THUDM/chatglm2-6b", trust_remote_code=True)
-model = AutoModel.from_pretrained("THUDM/chatglm2-6b-int4", trust_remote_code=True).float()
-model = model.eval()
-response, history = model.chat(tokenizer, "你好", history=[])
-print(response)
-```
+机器学习是实现人工智能的重要算法，深度学习是以深度神经网络解决问题的机器学习方法
 
-可以看到代码从hf.co下载了需要的模型，鉴于有很多人网络“不好”，以及最近hf.co似乎被墙了，需要一种更加稳妥的方式来学习llm。参考回答：<https://www.zhihu.com/question/599683557/answer/3202372678>
+### 分类
 
-幸好清华将模型权重上传了一份到自己的服务器，链接：[chatglm](https://cloud.tsinghua.edu.cn/d/674208019e314311ab5c/)
+1. 设定范围
+   - 传统机器学习：线性回归、逻辑回归、决策树...
+   - 深度神经网络：CNN（resnet、mobilenet）、RNN、transformer...
 
-但是只有这些模型是不够的，还需要一些其他的文件，从而顺利加载模型，根据自动下载的文件可知：
+notes：也就是常说的**模型**。这里的分类依据是设定范围，也是最常被人们提到的机器学习方法分类。注意更规范的写法应该是深度神经网络与线性回归等同级，由于其内容过于庞大，所以将其他的方法统一归类到传统机器学习中了。其次，传统机器学习基本只能处理分类和回归问题，而深度学习能处理更复杂的问题。
 
-加载tokenizer需要：
-- tokenizer_config.json
-- tokenization_chatglm.py
-- tokenizer.model（已有）
+2. 设定标准
+   - 监督学习
+   - 半监督学习
+   - 无监督学习（自监督学习）
+   - 强化学习：只给好或差的评价
 
-加载model需要：
-- config.json
-- configuration_chatglm.py
-- modeling_chatglm.py
-- quantization.py（可选，运行int4等量化模型需要）
-- pytorch_model.bin（已有）
+notes：也就是常说的损失loss。考虑的问题是怎么衡量模型输出与预期的差异。
 
-于是从清华云下载权重后，再将此仓库的其他文件一并放入文件夹，最后将上述脚本的文件修改为本地文件夹路径例如`"./chatglm2-6b-int4"`，，即可加载运行
+3. 达成目标
+   - 传统优化算法：遗传算法等
+   - 深度学习优化：梯度下降+反向传播
 
-### chatglm
+notes：也就是常说的优化器。
 
-官方的模型需要申请license才能下载，好在有其他方法可以尝试，以下链接：
+4. 输出内容
+   - 判别式模型：随机森林、SVM、经典DNN（CNN、RNN、transformer）...
+   - 生成式模型：朴素贝叶斯、隐马尔可夫、GAN、VAE...
 
-1. hugging face非官方
-- <https://huggingface.co/NousResearch/Llama-2-13b-hf>
-- <https://huggingface.co/NousResearch/Llama-2-7b-hf>
-- <https://huggingface.co/NousResearch/Llama-2-7b-chat-hf>
+notes：生成式模型旨在学习数据的联合概率分布，即同时模拟观测数据和标签的分布。判别式模型专注于学习从输入数据到输出标签的条件概率分布。个人感觉生成式模型例如GAN与VAE不一定就和DNN完全没有关系，GAN和VAE的backbone其实也是DNN，特殊点在于训练的思想。而判别式模型主要的任务就是回归和分类，也就是用作回归和分类的DNN。
 
-2. gitee镜像仓库
-- <https://gitee.com/modelee/LLaMA-2-7B-32K>
-- <https://gitee.com/modelee/llama-7b-hf>
-- <https://gitee.com/modelee/llama-7b>
+5. 应用领域
+   - 计算机视觉（CV）
+   - 自然语言处理（NLP）
+   - 生成式人工智能（AIGC）
+   - 多模态
 
-3. 异型岛
-- <https://aliendao.cn/models/NousResearch/Llama-2-7b-hf>
+这里用一个表格来梳理一下
 
+| CV     |     | NLP | AIGC   |      |              |        |
+| ------ | --- | --- | ------ | ---- | ------------ | ------ |
+| 高级视觉任务 | 分类  | 分类  | 文生文llm | gpt  | llama        |        |
+|        | 检测  | 翻译  | 文生图    | sd   | midjourney   | delle  |
+|        | 分割  | 对话  | 文生音    | tts  |              |        |
+| 低级视觉任务 | 超分  |     | 文生视频   | sora | imagen video | runway |
+|        | 去噪  |     |        |      |              |        |
+|        | 增强  |     |        |      |              |        |
+|        |     |     |        |      |              |        |
 
-我的尝试
+notes：这里的AIGC也不能完全与CV以及NLP解耦。实际上，AIGC是利用大模型的能力，将一部分以前实现的效果不好的，或者以前不能实现的CV以及NLP任务进行了提升，但是由于其很火热，所以单独作为一个类别。其次，AIGC往往需要多模态的能力。
 
-```
-git clone https://huggingface.co/NousResearch/Llama-2-7b-chat-hf
-git restore --source=HEAD :/
-```
+6. 其他
 
-## HF模型转换为onnx模型
-
-参考链接：[大模型部署：huggingface模型转onnx格式](https://zhuanlan.zhihu.com/p/660330173)
-
-## 移动端推理框架
-
-### paddle-lite
-
-<https://github.com/PaddlePaddle/Paddle-Lite>
-
-大致的步骤分为：
-
-- x2paddle：转换模型。将模型（onnx、pt、tf）转换为paddle模式。默认为`uncombined`模型，即`model.pdmodel`和`model.pdiparams`等文件在一个文件夹中，使用时输入文件夹
-- opt：优化模型。优化具体的行为：*量化*、子图融合、混合调度、Kernel 优选等等方法
-- run：运行模型
-
-其中，关于量化：
-1. Paddle Lite OPT 工具和 PaddleSlim 都提供了动态离线量化功能，两者原理相似，都可以产出动态离线量化的模型。
-2. 动态离线量化不需要任何其他的数据，静态离线量化需要少量校准数据计算量化因子（有两种计算量化因子的方法，非饱和量化方法和饱和量化方法）
-3. 动态离线量化模型有两种预测方式：
-    - 第一种是**反量化预测方式**，即是首先将 INT8/16 类型的权重反量化成 FP32 类型，然后再使用 FP32 浮运算运算进行预测；
-    - 第二种是**量化预测方式**，即是预测中动态计算量化 OP 输入的量化信息，基于量化的输入和权重进行 INT8 整形运算。
-    - 注意：目前 Paddle Lite 仅支持第一种反量化预测方式。
-4. 静态离线量化可以进行量化预测，加速效果更好
-
-优势：
-- 对生态支持力度比较大，文档详细，编译简单
-
-不足：
-- 对于Tensor的功能较少，例如不能实现指定形状的Tensor生成
-- 模型处理输入输出比较繁琐，没有类似pytorch的`output=model.forward()`方法简单直观
-
-### MNN
-
-<https://github.com/alibaba/MNN>
-
-> 注意：Ubuntu 18.04.2 LTS下编译不通过，需要Ubuntu 20.04.3 LTS
-
-大致的步骤分为：
-- 使用MNNConverter将模型转换为mnn格式，支持的模型：TF, CAFFE, ONNX, TFLITE, TORCH, MNN, JSON
-- 使用quantized.out进行量化
-- 构建程序编译
-
-关于量化：
-- 离线量化：EMA，KL，ADMM
-- 训练量化：LSQ，OAQ，WAQ
-- **直接权值量化**：包括对称量化，非对称量化；一般8bit，计算时还原为float，这个应该和pdlite的动态离线量化一个道理
-- 训练权值量化：包括对称量化；更低比特
-- FP16
-
-优势：
-- 模型转换支持框架多、算子多
-- 模型处理输入输出直观方便
-
-### NCNN
-
-<https://github.com/Tencent/ncnn>
-
-### lite.ai.toolkit 3.2k
-
-<https://github.com/DefTruth/lite.ai.toolkit>
-
-好多框架与网络的集合
-
-## 关于conda和pip
-
-### conda
-
-```
-vim ~/.condarc
-
-channels:
-  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
-  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge
-  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/msys2/
-  - defaults
-show_channel_urls: true
-```
-
-### pip
-
-```
-echo "[global]" > ~/pip.conf
-echo "index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >> ~/pip.conf
-mkdir .pip
-mv ~/pip.conf ~/.pip/pip.conf
-```
+这里不太容易将某种思想归类至某一个下面，例如残差学习、BN、cross entropy loss等，但是却是跨很多领域都能用到的东西。
