@@ -73,6 +73,19 @@ channels:
 show_channel_urls: true
 ```
 
+这样依然会导致去默认channel搜索，不能完全解决问题，可以采用以下的方法：
+
+```
+vim ~/.condarc
+
+channels:
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge/
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/pytorch/
+ssl_verify: true
+```
+
 ### pip
 
 ```
