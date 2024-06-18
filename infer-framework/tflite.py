@@ -58,10 +58,10 @@ model.add(keras.Input(shape=(224, 224, 3)))
 model.add(layers.Conv2D(filters=64, kernel_size=3, padding='same', activation=None))
 
 model.summary()
-# model.save('tf_model') # 新版本tf不可用
+model.save('tf_model') # 新版本可能不可用，使用下面的tf接口
 model.save('conv.keras')
 model.save('conv.h5')
-tf.saved_model.save(model, 'conv')
+# tf.saved_model.save(model, 'conv')
 
 # 2. 单add算子实验
 import tensorflow as tf

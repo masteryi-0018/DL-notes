@@ -22,7 +22,7 @@ print(output_names)
 
 
 '''3. 保存模型'''
-
+# 自己创建tf_model目录
 # a. 整个模型
 
 # a1. SavedModel 格式
@@ -36,6 +36,13 @@ new_model.summary()
 model.save('tf_model/my_model.h5')
 # Recreate the exact same model, including its weights and the optimizer
 new_model = tf.keras.models.load_model('tf_model/my_model.h5')
+# Show the model architecture
+new_model.summary()
+
+# a3. keras 格式
+model.save('tf_model/my_model.keras')
+# Recreate the exact same model, including its weights and the optimizer
+new_model = tf.keras.models.load_model('tf_model/my_model.keras')
 # Show the model architecture
 new_model.summary()
 
