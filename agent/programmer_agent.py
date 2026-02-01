@@ -58,47 +58,6 @@ class SimpleProgrammerAgent:
 如果不需要使用工具，请直接返回代码或回答。
 只输出代码或JSON，不要有多余的解释。"""
     
-    def generate_code(self, task, with_tools=False):
-        messages = [
-            {
-                "role": "system",
-                "content": self._get_system_prompt() if with_tools else "你是一个编程助手。用户会给你一个编程任务，你需要生成Python代码来完成任务。只输出代码，不要解释。"
-            },
-            {
-                "role": "user",
-                "content": task
-            }
-        ]
-        
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            temperature=0.7
-        )
-        
-        return response.choices[0].message.content
-    
-    def clean_code(self, code):
-        lines = code.strip().split('\n')
-        cleaned_lines = []
-        
-        in_code_block = False
-        for line in lines:
-            if line.strip().startswith('```'):
-                in_code_block = not in_code_block
-                continue
-            if in_code_block:
-                cleaned_lines.append(line)
-            elif not line.strip().startswith('```'):
-                cleaned_lines.append(line)
-        
-        cleaned_code = '\n'.join(cleaned_lines).strip()
-        
-        if not cleaned_code:
-            cleaned_code = code.strip()
-        
-        return cleaned_code
-    
     def _parse_tool_call(self, response_text):
         try:
             response_text = response_text.strip()
@@ -160,7 +119,7 @@ class SimpleProgrammerAgent:
         
         return result
     
-    def execute_task_with_tools(self, task, max_iterations=5):
+    def execute_task(self, task, max_iterations=5):
         print(f"{'='*60}")
         print(f"🎯 开始执行任务")
         print(f"{'='*60}")
@@ -229,50 +188,19 @@ def main():
     agent = SimpleProgrammerAgent()
     
     print("=" * 60)
-    print("智能编程助手 - 支持工具调用")
+    print("智能编程助手 - 工具调用模式")
     print("=" * 60)
     
     print("\n可用工具:")
     for tool in agent.tool_manager.list_tools():
-        print(f"  - {tool['name']}: {tool['description']}")
+        print(f"  • {tool['name']}: {tool['description']}")
     
     print("\n" + "=" * 60)
-    task = input("请输入编程任务: ")
+    task = input("请输入任务: ")
     print("=" * 60)
+    print()
     
-    print("\n选择执行模式:")
-    print("1. 简单模式（仅生成和执行代码）")
-    print("2. 工具模式（可使用各种工具）")
-    mode = input("请选择 (1/2): ").strip()
-    
-    if mode == "2":
-        agent.execute_task_with_tools(task)
-    else:
-        code = agent.generate_code(task)
-        print(f"\n生成的代码:\n{code}\n")
-        
-        import subprocess
-        import sys
-        
-        filename = "temp_agent_code.py"
-        with open(filename, "w") as f:
-            f.write(code)
-        
-        try:
-            result = subprocess.run(
-                [sys.executable, filename],
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
-            print(f"输出:\n{result.stdout}")
-            if result.stderr:
-                print(f"错误:\n{result.stderr}")
-        except Exception as e:
-            print(f"执行失败: {e}")
-        finally:
-            if os.path.exists(filename):
-                os.remove(filename)
+    agent.execute_task(task)
 
 if __name__ == "__main__":
     main()
