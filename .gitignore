@@ -17,3 +17,8 @@ tf_model/
 *.wav
 *.mp3
 *.m4a
+
+# agent
+.env
+demo
+project
