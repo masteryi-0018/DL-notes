@@ -91,7 +91,7 @@ ssl_verify: true
 ```
 echo "[global]" > ~/pip.conf
 echo "index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >> ~/pip.conf
-mkdir .pip
+mkdir ~/.pip
 mv ~/pip.conf ~/.pip/pip.conf
 ```
 
