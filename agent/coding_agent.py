@@ -14,92 +14,63 @@ import os, json, subprocess, sys
 
 from openai import OpenAI
 
-# ── 工具定义（OpenAI Function Calling 格式）────────────────────────
+# ── 工具注册中心（MCP 思想的最简表达：工具定义和执行与 Agent 解耦）──
 
-TOOLS = [
-    {
-        "type": "function",
-        "function": {
-            "name": "shell",
-            "description": "执行 Shell 命令，返回 stdout/stderr",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "command": {"type": "string", "description": "要执行的命令"}
-                },
-                "required": ["command"],
+class ToolRegistry:
+    """工具注册中心：注册工具定义 + 执行工具调用"""
+
+    def __init__(self):
+        self._tools = {}
+
+    def register(self, name, description, parameters, handler):
+        self._tools[name] = {
+            "type": "function",
+            "function": {
+                "name": name,
+                "description": description,
+                "parameters": parameters,
             },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "read_file",
-            "description": "读取文件内容",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "path": {"type": "string", "description": "文件路径"}
-                },
-                "required": ["path"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "write_file",
-            "description": "写入文件（覆盖模式）",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "path": {"type": "string", "description": "文件路径"},
-                    "content": {"type": "string", "description": "要写入的内容"},
-                },
-                "required": ["path", "content"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "list_dir",
-            "description": "列出目录中的文件和子目录",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "path": {"type": "string", "description": "目录路径"}
-                },
-                "required": ["path"],
-            },
-        },
-    },
-]
+            "handler": handler,
+        }
+
+    def list_tools(self):
+        """返回 OpenAI Function Calling 格式的工具列表"""
+        return [{"type": t["type"], "function": t["function"]} for t in self._tools.values()]
+
+    def call_tool(self, name, arguments):
+        """执行工具并返回结果文本"""
+        handler = self._tools[name]["handler"]
+        try:
+            return handler(**arguments)
+        except Exception as e:
+            return f"执行失败: {e}"
 
 
-# ── 工具执行 ───────────────────────────────────────────────────────
+registry = ToolRegistry()
 
-def execute_tool(name, params):
-    """根据工具名分发执行，返回结果字符串"""
-    try:
-        if name == "shell":
-            r = subprocess.run(params["command"], shell=True,
-                               capture_output=True, text=True, timeout=30)
-            return r.stdout or r.stderr or "(无输出)"
-        elif name == "read_file":
-            with open(params["path"]) as f:
-                return f.read()
-        elif name == "write_file":
-            with open(params["path"], "w") as f:
-                f.write(params["content"])
-            return "写入成功"
-        elif name == "list_dir":
-            entries = os.listdir(params["path"])
-            return "\n".join(entries) if entries else "(空目录)"
-        else:
-            return f"未知工具: {name}"
-    except Exception as e:
-        return f"执行失败: {e}"
+registry.register(
+    "shell", "执行 Shell 命令，返回 stdout/stderr",
+    {"type": "object", "properties": {"command": {"type": "string", "description": "要执行的命令"}}, "required": ["command"]},
+    lambda command: subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30).stdout or "(无输出)",
+)
+
+registry.register(
+    "read_file", "读取文件内容",
+    {"type": "object", "properties": {"path": {"type": "string", "description": "文件路径"}}, "required": ["path"]},
+    lambda path: open(path).read(),
+)
+
+registry.register(
+    "write_file", "写入文件（覆盖模式）",
+    {"type": "object", "properties": {"path": {"type": "string", "description": "文件路径"}, "content": {"type": "string", "description": "要写入的内容"}}, "required": ["path", "content"]},
+    lambda path, content: (open(path, "w").write(content), "写入成功")[1],
+)
+
+registry.register(
+    "list_dir", "列出目录中的文件和子目录",
+    {"type": "object", "properties": {"path": {"type": "string", "description": "目录路径"}}, "required": ["path"]},
+    lambda path: "\n".join(os.listdir(path)) if os.listdir(path) else "(空目录)",
+)
 
 
 # ── Agent 核心循环 ──────────────────────────────────────────────────
@@ -124,12 +95,14 @@ def agent_loop(task, max_steps=10):
         {"role": "user", "content": task},
     ]
 
+    tools = registry.list_tools()
+
     for step in range(1, max_steps + 1):
         # ── 思考：LLM 决定下一步做什么 ──
         resp = client.chat.completions.create(
             model="glm-4.7-flash",
             messages=history,
-            tools=TOOLS,
+            tools=tools,
             temperature=0.1,
         )
         msg = resp.choices[0].message
@@ -143,7 +116,7 @@ def agent_loop(task, max_steps=10):
             print(f"\n{'─'*50}")
             print(f"[Step {step}] 🤔 Reason: {msg.content or '(模型决定调用工具)'}")
             print(f"          🔧 Act:   {t_name}({json.dumps(t_args, ensure_ascii=False)})")
-            result = execute_tool(t_name, t_args)
+            result = registry.call_tool(t_name, t_args)
             print(f"          👁  Observe: {result[:200]}")
             print(f"{'─'*50}")
 
@@ -183,7 +156,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     print("编码 Agent Demo —— 展示 Agent 核心循环")
-    print("可用的工具: " + ", ".join(t["function"]["name"] for t in TOOLS))
+    print("可用的工具: " + ", ".join(t["function"]["name"] for t in registry.list_tools()))
     task = input("\n请输入任务: ").strip()
     if task:
         agent_loop(task)
