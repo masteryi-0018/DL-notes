@@ -14,39 +14,67 @@ import os, json, subprocess, sys
 
 from openai import OpenAI
 
-# ── 工具定义（用最简单的 dict 描述，不搞复杂的类继承）──────────────────
+# ── 工具定义（OpenAI Function Calling 格式）────────────────────────
 
 TOOLS = [
     {
-        "name": "shell",
-        "description": "执行 Shell 命令，返回 stdout/stderr",
-        "parameters": {"command": "要执行的命令"},
+        "type": "function",
+        "function": {
+            "name": "shell",
+            "description": "执行 Shell 命令，返回 stdout/stderr",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "command": {"type": "string", "description": "要执行的命令"}
+                },
+                "required": ["command"],
+            },
+        },
     },
     {
-        "name": "read_file",
-        "description": "读取文件内容",
-        "parameters": {"path": "文件路径"},
+        "type": "function",
+        "function": {
+            "name": "read_file",
+            "description": "读取文件内容",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "文件路径"}
+                },
+                "required": ["path"],
+            },
+        },
     },
     {
-        "name": "write_file",
-        "description": "写入文件（覆盖模式）",
-        "parameters": {"path": "文件路径", "content": "要写入的内容"},
+        "type": "function",
+        "function": {
+            "name": "write_file",
+            "description": "写入文件（覆盖模式）",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "文件路径"},
+                    "content": {"type": "string", "description": "要写入的内容"},
+                },
+                "required": ["path", "content"],
+            },
+        },
     },
     {
-        "name": "list_dir",
-        "description": "列出目录中的文件和子目录",
-        "parameters": {"path": "目录路径"},
+        "type": "function",
+        "function": {
+            "name": "list_dir",
+            "description": "列出目录中的文件和子目录",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "目录路径"}
+                },
+                "required": ["path"],
+            },
+        },
     },
 ]
-
-
-def format_tools():
-    """把工具列表转成 prompt 可用的文本"""
-    lines = []
-    for t in TOOLS:
-        params = ", ".join(t["parameters"].keys())
-        lines.append(f"  {t['name']}({params}): {t['description']}")
-    return "\n".join(lines)
 
 
 # ── 工具执行 ───────────────────────────────────────────────────────
@@ -74,47 +102,14 @@ def execute_tool(name, params):
         return f"执行失败: {e}"
 
 
-# ── 输出解析 ───────────────────────────────────────────────────────
-
-def parse_response(text):
-    """解析 LLM 返回的 JSON 工具调用，如果不是工具调用则返回 (tool_call, reasoning) 或 None"""
-    text = text.strip()
-    # 处理 markdown 代码块包裹的情况
-    if text.startswith("```"):
-        lines = text.split("\n")
-        text = "\n".join(lines[1:]) if lines[0].startswith("```") else text
-        if text.endswith("```"):
-            text = text[:-3]
-    # 尝试找到 JSON 对象（可能前面有推理文字）
-    json_start = text.find("{")
-    if json_start == -1:
-        return None
-    reasoning = text[:json_start].strip()
-    json_text = text[json_start:]
-    try:
-        data = json.loads(json_text)
-        if "tool" in data and "parameters" in data:
-            return (data, reasoning)
-    except json.JSONDecodeError:
-        pass
-    return None
-
-
 # ── Agent 核心循环 ──────────────────────────────────────────────────
 
-SYSTEM_PROMPT = f"""你是一个编码助手 Agent。你可以使用以下工具来完成用户的编程任务：
-
-{format_tools()}
+SYSTEM_PROMPT = f"""你是一个编码助手 Agent。你可以使用工具来完成用户的编程任务。
 
 使用规则：
 1. 当你需要做某件事时，必须调用工具。不要假装你能做到——你真的可以！
-2. 调用工具时，先用一行简短中文说明你要做什么（为什么选这个工具），然后另起一行，严格按照以下 JSON 格式返回工具调用：
-
-（你的意图说明）
-{{"tool": "工具名", "parameters": {{"参数": "值"}}}}
-
-3. 每次只调用一个工具。收到结果后，再决定下一步做什么。
-4. 当任务完全完成时，直接输出完成信息（不要再用 JSON 格式）。"""
+2. 每次只调用一个工具。收到结果后，再决定下一步做什么。
+3. 当任务完全完成时，直接输出完成信息。"""
 
 
 def agent_loop(task, max_steps=10):
@@ -134,31 +129,46 @@ def agent_loop(task, max_steps=10):
         resp = client.chat.completions.create(
             model="glm-4.7-flash",
             messages=history,
+            tools=TOOLS,
             temperature=0.1,
         )
-        reply = resp.choices[0].message.content
-
-        parsed = parse_response(reply)
+        msg = resp.choices[0].message
 
         # ── 观察 & 行动 ──
-        if parsed:
-            tool_call, reasoning = parsed
-            t_name, t_params = tool_call["tool"], tool_call["parameters"]
+        if msg.tool_calls:
+            tc = msg.tool_calls[0]
+            t_name = tc.function.name
+            t_args = json.loads(tc.function.arguments)
+
             print(f"\n{'─'*50}")
-            print(f"[Step {step}] 🤔 Reason: {reasoning}")
-            print(f"          🔧 Act:   {t_name}({t_params})")
-            result = execute_tool(t_name, t_params)
+            print(f"[Step {step}] 🤔 Reason: {msg.content or '(模型决定调用工具)'}")
+            print(f"          🔧 Act:   {t_name}({json.dumps(t_args, ensure_ascii=False)})")
+            result = execute_tool(t_name, t_args)
             print(f"          👁  Observe: {result[:200]}")
             print(f"{'─'*50}")
 
             # 把这次交互追加到对话历史
-            history.append({"role": "assistant", "content": reply})
-            history.append({"role": "user", "content": f"工具执行结果:\n{result}"})
+            history.append({
+                "role": "assistant",
+                "content": msg.content,
+                "tool_calls": [
+                    {
+                        "id": tc.id,
+                        "type": "function",
+                        "function": {"name": t_name, "arguments": tc.function.arguments},
+                    }
+                ],
+            })
+            history.append({
+                "role": "tool",
+                "tool_call_id": tc.id,
+                "content": result,
+            })
         else:
             # ── 没有工具调用，任务完成 ──
             print(f"\n{'='*50}")
             print(f"[Step {step}] ✅ Agent 认为任务完成:\n")
-            print(reply)
+            print(msg.content)
             print(f"{'='*50}")
             return
 
@@ -173,7 +183,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     print("编码 Agent Demo —— 展示 Agent 核心循环")
-    print("可用的工具: " + ", ".join(t["name"] for t in TOOLS))
+    print("可用的工具: " + ", ".join(t["function"]["name"] for t in TOOLS))
     task = input("\n请输入任务: ").strip()
     if task:
         agent_loop(task)
