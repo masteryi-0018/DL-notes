@@ -53,6 +53,58 @@ npm install -g @anthropic-ai/claude-code
   },
 ```
 
+## codex+deepseek配置
+
+```sh
+curl -fsSL https://chatgpt.com/codex/install.sh | sh
+
+npm install -g @openai/codex # 建议这个
+
+# 登录选第三个，填个dummy先
+
+# dpsk以及其他不符合api规范的需要用代理
+
+pip install codex-relay
+
+CODEX_RELAY_UPSTREAM=https://api.deepseek.com \
+CODEX_RELAY_API_KEY=你的key \
+CODEX_RELAY_PORT=4446 \
+codex-relay
+
+# 另一个终端
+codex-relay --print-config \
+  --upstream https://api.deepseek.com \
+  --api-key 你的key
+
+# 将输出替换
+# ── Codex config snippet for api.deepseek.com ──
+# Copy the lines below into ~/.codex/config.toml
+
+model_provider = "deepseek"
+model = "deepseek-v4-flash"
+
+[model_providers.deepseek]
+name = "deepseek"
+base_url = "https://api.deepseek.com" # 这里需要手动替换为本地地址，必须带v1：http://127.0.0.1:4446/v1
+wire_api = "responses"
+env_key = "DEEPSEEK_API_KEY"
+
+[model_properties."deepseek-v4-flash"]
+context_window = 262144
+max_context_window = 1048576
+supports_parallel_tool_calls = true
+supports_reasoning_summaries = true
+input_modalities = ["text"]
+
+[model_properties."deepseek-v4-pro"]
+context_window = 262144
+max_context_window = 1048576
+supports_parallel_tool_calls = true
+supports_reasoning_summaries = true
+input_modalities = ["text"]
+```
+
+
 ## LLM、Agent、JSON解析、Function Calling、MCP 的关系
 
 ```
