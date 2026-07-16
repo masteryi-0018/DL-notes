@@ -104,6 +104,32 @@ supports_reasoning_summaries = true
 input_modalities = ["text"]
 ```
 
+完整的白嫖的amd开发者的配置：
+
+```sh
+model_provider = "amd"
+model = "Qwen3.6-35B-A3B"
+
+[model_providers.amd]
+name = "amd"
+base_url = "http://127.0.0.1:4446/v1"
+wire_api = "responses"
+env_key = "DEVELOPER_AMD_COM_API_KEY"
+
+[model_properties."Qwen3.6-35B-A3B"]
+context_window = 131072
+max_context_window = 131072
+supports_parallel_tool_calls = true
+supports_reasoning_summaries = false
+input_modalities = ["text"]
+
+[model_properties."DeepSeek-V4-Flash"]
+context_window = 262144
+max_context_window = 1048576
+supports_parallel_tool_calls = true
+supports_reasoning_summaries = true
+input_modalities = ["text"]
+```
 
 ## LLM、Agent、JSON解析、Function Calling、MCP 的关系
 
