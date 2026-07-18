@@ -131,6 +131,50 @@ supports_reasoning_summaries = true
 input_modalities = ["text"]
 ```
 
+## pi+deepseek配置
+
+```sh
+npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+
+# 通过api登录，可以随便写一个
+
+# ~/.pi/agent/auth.json
+{
+  "amd": {
+    "type": "api_key",
+    "key": "你的key"
+  }
+}
+
+# 必须新建~/.pi/agent/models.json，否则无法识别第三方
+{
+  "providers": {
+    "amd": {
+      "baseUrl": "https://developer.amd.com.cn/radeon/api/v1",
+      "api": "openai-completions",
+      "apiKey": "$GATEWAY_API_KEY",
+      "models": [
+        {
+          "id": "Qwen3.6-35B-A3B",
+          "name": "Qwen3.6-35B",
+          "contextWindow": 131072,
+          "maxTokens": 8192,
+          "input": ["text"]
+        },
+        {
+          "id": "DeepSeek-V4-Flash",
+          "name": "DeepSeek V4 Flash",
+          "contextWindow": 262144,
+          "maxTokens": 8192,
+          "input": ["text"],
+          "reasoning": true
+        }
+      ]
+    }
+  }
+}
+```
+
 ## litellm尝试
 
 尝试替代codex-relay，但是失败：
