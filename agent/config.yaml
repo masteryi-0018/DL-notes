@@ -1,0 +1,9 @@
+model_list:
+  - model_name: Qwen3.6-35B-A3B    # 这个名称需要和 Codex 配置中的 model 完全一致
+    litellm_params:
+      # 使用 openai/ 前缀，告诉 LiteLLM 这是一个 OpenAI 兼容接口
+      model: openai/Qwen3.6-35B-A3B
+      api_key: "你的key"
+      api_base: "https://developer.amd.com.cn/radeon/api/v1"
+      # 关键配置：强制将 /responses 请求桥接到 /chat/completions
+      use_chat_completions_api: true

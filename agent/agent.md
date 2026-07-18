@@ -131,6 +131,19 @@ supports_reasoning_summaries = true
 input_modalities = ["text"]
 ```
 
+## litellm尝试
+
+尝试替代codex-relay，但是失败：
+1. 体量大，不lite，启动慢
+2. 不支持 /responses 请求桥接到 /chat/completions，目前我的amd后端vllm会报不允许 tools: [] 空列表
+3. 参考config.yaml，启动命令
+
+```sh
+pip install 'litellm[proxy]'
+litellm --config config.yaml --port 4000
+# 然后agent的baseurl替换成本地就行
+```
+
 ## LLM、Agent、JSON解析、Function Calling、MCP 的关系
 
 ```
