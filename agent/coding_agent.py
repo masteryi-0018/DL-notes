@@ -10,9 +10,11 @@
   python coding_agent.py
 """
 
-import os, json, subprocess, sys
+import os, json, subprocess, sys, asyncio
 
 from openai import OpenAI
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
 
 # ── 工具注册中心（MCP 思想的最简表达：工具定义和执行与 Agent 解耦）──
 
@@ -73,6 +75,11 @@ registry.register(
 )
 
 
+# ── 硬件信息工具由 MCP Server (hardware_mcp.py) 提供 ──
+# coding_agent.py 作为 MCP Client，通过 mcp.client 连接 Server，
+# 自动发现并调用工具，无需在此手动注册。详见下方 main() 与 agent_loop()。
+
+
 # ── Agent 核心循环 ──────────────────────────────────────────────────
 
 SYSTEM_PROMPT = f"""你是一个编码助手 Agent。你可以使用工具来完成用户的编程任务。
@@ -83,8 +90,12 @@ SYSTEM_PROMPT = f"""你是一个编码助手 Agent。你可以使用工具来完
 3. 当任务完全完成时，直接输出完成信息。"""
 
 
-def agent_loop(task, max_steps=10):
-    """Agent 的主循环：每一步都是 思考→行动→观察 的循环"""
+async def agent_loop(task, session, mcp_tools, max_steps=10):
+    """Agent 的主循环：每一步都是 思考→行动→观察 的循环
+
+    session:   MCP ClientSession，用于调用 hardware_mcp server 上的工具
+    mcp_tools: session.list_tools() 发现的 MCP 工具列表
+    """
     client = OpenAI(
         api_key=os.environ["GLM_API_KEY"],
         base_url="https://open.bigmodel.cn/api/paas/v4/",
@@ -95,7 +106,13 @@ def agent_loop(task, max_steps=10):
         {"role": "user", "content": task},
     ]
 
-    tools = registry.list_tools()
+    # 本地工具 + MCP 工具，统一转成 OpenAI Function Calling 格式
+    mcp_tool_names = {t.name for t in mcp_tools}
+    tools = registry.list_tools() + [
+        {"type": "function",
+         "function": {"name": t.name, "description": t.description, "parameters": t.inputSchema}}
+        for t in mcp_tools
+    ]
 
     for step in range(1, max_steps + 1):
         # ── 思考：LLM 决定下一步做什么 ──
@@ -116,7 +133,14 @@ def agent_loop(task, max_steps=10):
             print(f"\n{'─'*50}")
             print(f"[Step {step}] 🤔 Reason: {msg.content or '(模型决定调用工具)'}")
             print(f"          🔧 Act:   {t_name}({json.dumps(t_args, ensure_ascii=False)})")
-            result = registry.call_tool(t_name, t_args)
+            # 分流：MCP 工具走 mcp.client，本地工具走 registry
+            if t_name in mcp_tool_names:
+                res = await session.call_tool(t_name, t_args)
+                result = "\n".join(
+                    c.text for c in res.content if getattr(c, "type", None) == "text"
+                )
+            else:
+                result = registry.call_tool(t_name, t_args)
             print(f"          👁  Observe: {result[:200]}")
             print(f"{'─'*50}")
 
@@ -150,13 +174,28 @@ def agent_loop(task, max_steps=10):
 
 # ── 入口 ───────────────────────────────────────────────────────────
 
-if __name__ == "__main__":
+async def main():
     if "GLM_API_KEY" not in os.environ:
         print("请先设置环境变量: export GLM_API_KEY='your-key'")
         sys.exit(1)
 
-    print("编码 Agent Demo —— 展示 Agent 核心循环")
-    print("可用的工具: " + ", ".join(t["function"]["name"] for t in registry.list_tools()))
-    task = input("\n请输入任务: ").strip()
-    if task:
-        agent_loop(task)
+    # 以 MCP Client 身份启动 hardware_mcp.py（作为子进程，通过 stdio 通信）
+    server_params = StdioServerParameters(
+        command=sys.executable,
+        args=[os.path.join(os.path.dirname(os.path.abspath(__file__)), "hardware_mcp.py")],
+    )
+
+    print("编码 Agent Demo —— 展示 Agent + MCP 集成")
+    async with stdio_client(server_params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            mcp_tools = await session.list_tools()
+            print("本地工具:", ", ".join(t["function"]["name"] for t in registry.list_tools()))
+            print("MCP 工具:", ", ".join(t.name for t in mcp_tools.tools))
+            task = input("\n请输入任务: ").strip()
+            if task:
+                await agent_loop(task, session, mcp_tools.tools)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
