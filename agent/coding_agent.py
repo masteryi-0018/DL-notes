@@ -51,27 +51,43 @@ class ToolRegistry:
 registry = ToolRegistry()
 
 registry.register(
-    "shell", "执行 Shell 命令，返回 stdout/stderr",
+    "bash", "执行 Shell 命令，返回 stdout/stderr",
     {"type": "object", "properties": {"command": {"type": "string", "description": "要执行的命令"}}, "required": ["command"]},
     lambda command: subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30).stdout or "(无输出)",
 )
 
 registry.register(
-    "read_file", "读取文件内容",
+    "read", "读取文件内容",
     {"type": "object", "properties": {"path": {"type": "string", "description": "文件路径"}}, "required": ["path"]},
     lambda path: open(path).read(),
 )
 
 registry.register(
-    "write_file", "写入文件（覆盖模式）",
+    "write", "写入文件（覆盖模式）",
     {"type": "object", "properties": {"path": {"type": "string", "description": "文件路径"}, "content": {"type": "string", "description": "要写入的内容"}}, "required": ["path", "content"]},
     lambda path, content: (open(path, "w").write(content), "写入成功")[1],
 )
 
 registry.register(
-    "list_dir", "列出目录中的文件和子目录",
-    {"type": "object", "properties": {"path": {"type": "string", "description": "目录路径"}}, "required": ["path"]},
-    lambda path: "\n".join(os.listdir(path)) if os.listdir(path) else "(空目录)",
+    "edit", "精确替换文件中的指定文本（需要提供 old_text 和 new_text）",
+    {"type": "object",
+     "properties": {
+         "path": {"type": "string", "description": "文件路径"},
+         "old_text": {"type": "string", "description": "要替换的原始文本片段"},
+         "new_text": {"type": "string", "description": "替换为的新文本片段"},
+     },
+     "required": ["path", "old_text", "new_text"]},
+    lambda path, old_text, new_text: (
+        "编辑成功" if (
+            (lambda c: (c := open(path).read(), c.replace(old_text, new_text), open(path, "w").write(c.replace(old_text, new_text)), "编辑成功")[3])()
+            if old_text in open(path).read() else "替换内容未找到，未修改文件"
+        ) else "替换内容未找到，未修改文件"
+    ) if False else (lambda p, o, n: (
+        (lambda c: (
+            (open(p, "w").write(c.replace(o, n)), "编辑成功")[1]
+            if o in c else "替换内容未找到，未修改文件"
+        ))(open(p).read())
+    ))(path, old_text, new_text),
 )
 
 
