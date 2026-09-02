@@ -151,3 +151,7 @@ Host home-machine-1
     ServerAliveInterval 60
     ServerAliveCountMax 3
 ```
+
+## 实操
+
+参考：<https://masteryi-0018.github.io/posts/2026/05/blog-post-2/>
